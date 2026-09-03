@@ -1,10 +1,10 @@
 import type { ApiResponse, Chat, Message, Pagination, User } from "@/types"
 
 const TOKEN_KEY = "gpt-token"
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ""
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL?.replace(/\/$/, "") || ""
 
 function apiUrl(path: string) {
-  return `${API_BASE}${path}`
+  return `${BACKEND_URL}${path}`
 }
 
 export function getToken(): string | null {
