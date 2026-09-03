@@ -1,6 +1,11 @@
 import type { ApiResponse, Chat, Message, Pagination, User } from "@/types"
 
 const TOKEN_KEY = "gpt-token"
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ""
+
+function apiUrl(path: string) {
+  return `${API_BASE}${path}`
+}
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
@@ -28,7 +33,7 @@ async function request<T>(
     ;(headers as Record<string, string>)["Authorization"] = `Bearer ${token}`
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     headers,
     credentials: "include",
@@ -81,7 +86,7 @@ export const messageApi = {
     onChunk?: (chunk: string) => void
   ): Promise<{ chatId: string; fullText: string }> => {
     const token = getToken()
-    const response = await fetch("/api/messages/", {
+    const response = await fetch(apiUrl("/api/messages/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
