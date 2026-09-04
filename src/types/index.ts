@@ -1,8 +1,27 @@
+export interface UserSubscription {
+  usage: number
+  plan: {
+    name: string
+    max_messages: number
+  }
+}
+
 export interface User {
   id: string
   email: string
   name: string
   avatar: string | null
+  subscriptions?: UserSubscription[]
+}
+
+export interface Plan {
+  id: string
+  name: string
+  description: string | null
+  price: number
+  max_messages: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Chat {
@@ -35,4 +54,21 @@ export interface ApiResponse<T = unknown> {
   success: boolean
   message: string
   data?: T
+}
+
+export interface RazorpayOrder {
+  id: string
+  entity: string
+  amount: number
+  currency: string
+  status: string
+  notes?: {
+    userId?: string
+    name?: string
+    email?: string
+  }
+}
+
+export function getActiveSubscription(user: User | null | undefined) {
+  return user?.subscriptions?.[0] ?? null
 }

@@ -1,4 +1,12 @@
-import type { ApiResponse, Chat, Message, Pagination, User } from "@/types"
+import type {
+  ApiResponse,
+  Chat,
+  Message,
+  Pagination,
+  Plan,
+  RazorpayOrder,
+  User,
+} from "@/types"
 
 const TOKEN_KEY = "gpt-token"
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL?.replace(/\/$/, "") || ""
@@ -124,4 +132,39 @@ export const messageApi = {
 
     return { chatId: resolvedChatId, fullText }
   },
+}
+
+export const subscriptionApi = {
+  usage: () =>
+    request<{
+      status?: boolean
+      success?: boolean
+      message: string
+      data: {
+        usage: number
+        plan: { max_messages: number }
+      } | null
+    }>("/api/subscription/usage"),
+}
+
+export const plansApi = {
+  list: () =>
+    request<{ status?: boolean; success?: boolean; message: string; data: Plan[] }>(
+      "/api/plans/"
+    ),
+
+  buy: (planId: string) =>
+    request<ApiResponse<RazorpayOrder>>(`/api/plans/buy/${planId}`),
+}
+
+export const paymentApi = {
+  verify: (payload: {
+    razorpay_order_id: string
+    razorpay_payment_id: string
+    razorpay_signature: string
+  }) =>
+    request<ApiResponse>(`/api/payment/verify`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 }

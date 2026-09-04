@@ -11,6 +11,8 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ChatInput } from "@/components/chat-input"
 import { ChatMessage } from "@/components/chat-message"
 import { ChatSidebar } from "@/components/chat-sidebar"
+import { PlansDialog } from "@/components/plans-dialog"
+import { useAuth } from "@/context/auth-context"
 import { chatApi, messageApi } from "@/lib/api"
 import type { Chat, Message } from "@/types"
 
@@ -56,11 +58,18 @@ export function ChatView({
   onChatCreated,
   onChatsRefresh,
 }: ChatViewProps) {
+  const {
+    messagesUsed,
+    messagesLimit,
+    isLimitReached,
+    refreshUsage,
+  } = useAuth()
   const [messages, setMessages] = useState<LocalMessage[]>([])
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [streamingContent, setStreamingContent] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [showPlansDialog, setShowPlansDialog] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = useCallback(() => {
@@ -117,6 +126,12 @@ export function ChatView({
   }, [messages, streamingContent, scrollToBottom])
 
   const handleSend = async (text: string) => {
+    if (isLimitReached) {
+      setShowPlansDialog(true)
+      setError("Message limit reached. Upgrade your plan to continue.")
+      return
+    }
+
     const userMsg: LocalMessage = {
       id: `temp-user-${Date.now()}`,
       role: "User",
@@ -151,9 +166,18 @@ export function ChatView({
       }
 
       onChatsRefresh()
+      void refreshUsage()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send message")
+      const message =
+        err instanceof Error ? err.message : "Failed to send message"
+      setError(
+        message.toLowerCase().includes("internal server error") ||
+          message.toLowerCase().includes("max message limit")
+          ? "Message limit reached or request failed. Try upgrading your plan."
+          : message
+      )
       setStreamingContent("")
+      void refreshUsage()
     } finally {
       setIsSending(false)
     }
@@ -249,6 +273,14 @@ export function ChatView({
         onSend={handleSend}
         disabled={isLoadingMessages}
         isLoading={isSending}
+        messagesUsed={messagesUsed}
+        messagesLimit={messagesLimit}
+        onUpgradeClick={() => setShowPlansDialog(true)}
+      />
+
+      <PlansDialog
+        open={showPlansDialog}
+        onClose={() => setShowPlansDialog(false)}
       />
     </div>
   )

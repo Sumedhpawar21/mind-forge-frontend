@@ -13,6 +13,7 @@ import { useState } from "react"
 import { APP_NAME } from "@/lib/brand"
 import { Button } from "@/components/ui/button"
 import { LogoutConfirmDialog } from "@/components/logout-confirm-dialog"
+import { PlansDialog } from "@/components/plans-dialog"
 import { useAuth } from "@/context/auth-context"
 import { useTheme } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
@@ -40,10 +41,11 @@ export function ChatSidebar({
   onDeleteChat,
   isLoading,
 }: ChatSidebarProps) {
-  const { user, logout } = useAuth()
+  const { user, subscription, logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const [collapsed, setCollapsed] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [showPlansDialog, setShowPlansDialog] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const handleLogout = async () => {
@@ -62,6 +64,8 @@ export function ChatSidebar({
         ? "dark"
         : "light"
       : theme
+
+  const planName = subscription?.plan.name
 
   return (
     <aside
@@ -175,7 +179,12 @@ export function ChatSidebar({
           )}
         >
           {!collapsed && user && (
-            <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setShowPlansDialog(true)}
+              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 text-left transition-colors hover:bg-sidebar-accent/70"
+              title="View plans & subscription"
+            >
               {user.avatar ? (
                 <img
                   src={user.avatar}
@@ -192,10 +201,31 @@ export function ChatSidebar({
                 <p className="truncate text-xs text-muted-foreground">
                   {user.email}
                 </p>
+                {planName && (
+                  <p className="mt-0.5 truncate text-[11px] font-medium text-primary">
+                    {planName} plan
+                    {subscription
+                      ? ` · ${subscription.usage}/${subscription.plan.max_messages}`
+                      : ""}
+                  </p>
+                )}
               </div>
-            </div>
+            </button>
           )}
           <div className="flex items-center gap-0.5">
+            {collapsed && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setShowPlansDialog(true)}
+                aria-label="Plans & subscription"
+                title={planName ? `${planName} plan` : "Plans"}
+              >
+                <span className="text-[10px] font-bold text-primary">
+                  {planName?.charAt(0) ?? "P"}
+                </span>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon-sm"
@@ -227,6 +257,11 @@ export function ChatSidebar({
         isLoading={isLoggingOut}
         onConfirm={handleLogout}
         onCancel={() => setShowLogoutDialog(false)}
+      />
+
+      <PlansDialog
+        open={showPlansDialog}
+        onClose={() => setShowPlansDialog(false)}
       />
     </aside>
   )

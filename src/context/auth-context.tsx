@@ -8,15 +8,21 @@ import {
   type ReactNode,
 } from "react"
 
-import { authApi, clearToken, getToken, setToken } from "@/lib/api"
-import type { User } from "@/types"
+import { authApi, clearToken, getToken, setToken, subscriptionApi } from "@/lib/api"
+import { getActiveSubscription, type User, type UserSubscription } from "@/types"
 
 interface AuthContextValue {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
+  subscription: UserSubscription | null
+  messagesUsed: number
+  messagesLimit: number
+  isLimitReached: boolean
   login: (idToken: string) => Promise<void>
   logout: () => Promise<void>
+  refreshProfile: () => Promise<void>
+  refreshUsage: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -52,7 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await authApi.login(idToken)
     if (res.data?.token) {
       setToken(res.data.token)
-      setUser(res.data.user)
+      // Login payload omits subscription — refresh full profile
+      try {
+        const profile = await authApi.me()
+        setUser(profile.data ?? res.data.user)
+      } catch {
+        setUser(res.data.user)
+      }
     }
   }, [])
 
@@ -65,15 +77,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const refreshProfile = useCallback(async () => {
+    const token = getToken()
+    if (!token) {
+      setUser(null)
+      return
+    }
+
+    try {
+      const res = await authApi.me()
+      setUser(res.data ?? null)
+    } catch {
+      // Keep existing user on transient refresh failures
+    }
+  }, [])
+
+  const refreshUsage = useCallback(async () => {
+    const token = getToken()
+    if (!token) return
+
+    try {
+      const res = await subscriptionApi.usage()
+      if (!res.data) return
+
+      setUser((prev) => {
+        if (!prev) return prev
+        const current = prev.subscriptions?.[0]
+        return {
+          ...prev,
+          subscriptions: [
+            {
+              usage: res.data!.usage,
+              plan: {
+                name: current?.plan.name ?? "Plan",
+                max_messages: res.data!.plan.max_messages,
+              },
+            },
+          ],
+        }
+      })
+    } catch {
+      // Keep existing usage on transient refresh failures
+    }
+  }, [])
+
+  const subscription = getActiveSubscription(user)
+  const messagesUsed = subscription?.usage ?? 0
+  const messagesLimit = subscription?.plan.max_messages ?? 0
+  const isLimitReached =
+    messagesLimit > 0 ? messagesUsed >= messagesLimit : false
+
   const value = useMemo(
     () => ({
       user,
       isLoading,
       isAuthenticated: !!user,
+      subscription,
+      messagesUsed,
+      messagesLimit,
+      isLimitReached,
       login,
       logout,
+      refreshProfile,
+      refreshUsage,
     }),
-    [user, isLoading, login, logout]
+    [
+      user,
+      isLoading,
+      subscription,
+      messagesUsed,
+      messagesLimit,
+      isLimitReached,
+      login,
+      logout,
+      refreshProfile,
+      refreshUsage,
+    ]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
