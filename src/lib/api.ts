@@ -154,16 +154,29 @@ export const plansApi = {
     ),
 
   buy: (planId: string) =>
-    request<ApiResponse<RazorpayOrder>>(`/api/plans/buy/${planId}`),
+    request<ApiResponse<RazorpayOrderLegacy>>(`/api/plans/buy/${planId}`, {
+      method: "POST",
+    }),
 }
 
 export const paymentApi = {
+  createOrder: (payload: {
+    amount: number
+    currency?: string
+    receipt?: string
+    planId?: string
+  }) =>
+    request<ApiResponse<RazorpayOrder>>("/api/create-order", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
   verify: (payload: {
     razorpay_order_id: string
     razorpay_payment_id: string
     razorpay_signature: string
   }) =>
-    request<ApiResponse>(`/api/payment/verify`, {
+    request<ApiResponse>("/api/verify-payment", {
       method: "POST",
       body: JSON.stringify(payload),
     }),

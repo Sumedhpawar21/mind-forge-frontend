@@ -57,6 +57,12 @@ export interface ApiResponse<T = unknown> {
 }
 
 export interface RazorpayOrder {
+  order_id: string
+  amount: number
+  currency: string
+}
+
+export interface RazorpayOrderLegacy {
   id: string
   entity: string
   amount: number
