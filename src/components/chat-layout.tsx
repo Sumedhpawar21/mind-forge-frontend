@@ -65,6 +65,7 @@ export function ChatView({
     refreshUsage,
   } = useAuth()
   const [messages, setMessages] = useState<LocalMessage[]>([])
+  const [sessionChatId, setSessionChatId] = useState<string | null>(null)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [streamingContent, setStreamingContent] = useState("")
@@ -75,6 +76,10 @@ export function ChatView({
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [])
+
+  useEffect(() => {
+    setSessionChatId(chatId)
+  }, [chatId])
 
   useEffect(() => {
     if (!chatId) {
@@ -144,9 +149,10 @@ export function ChatView({
     setError(null)
 
     try {
+      const effectiveChatId = chatId ?? sessionChatId
       const { chatId: resolvedChatId, fullText } = await messageApi.send(
         text,
-        chatId ?? undefined,
+        effectiveChatId ?? undefined,
         (chunk) => {
           setStreamingContent((prev) => prev + chunk)
         }
@@ -161,8 +167,11 @@ export function ChatView({
       setMessages((prev) => [...prev, agentMsg])
       setStreamingContent("")
 
-      if (!chatId && resolvedChatId) {
-        onChatCreated(resolvedChatId)
+      if (resolvedChatId) {
+        setSessionChatId(resolvedChatId)
+        if (!chatId) {
+          onChatCreated(resolvedChatId)
+        }
       }
 
       onChatsRefresh()
