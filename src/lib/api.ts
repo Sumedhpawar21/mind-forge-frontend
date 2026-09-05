@@ -5,6 +5,7 @@ import type {
   Pagination,
   Plan,
   RazorpayOrder,
+  RazorpayOrderLegacy,
   User,
 } from "@/types"
 
