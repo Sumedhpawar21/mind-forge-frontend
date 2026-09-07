@@ -19,7 +19,7 @@ function formatPrice(price: number) {
 }
 
 export function PlansDialog({ open, onClose }: PlansDialogProps) {
-  const { subscription, refreshProfile } = useAuth()
+  const { subscription, refreshProfile, refreshUsage } = useAuth()
   const { checkout, isProcessing, error, setError } = useRazorpayCheckout()
   const [plans, setPlans] = useState<Plan[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -72,6 +72,7 @@ export function PlansDialog({ open, onClose }: PlansDialogProps) {
         description: `${plan.name} plan`,
         onSuccess: async () => {
           await refreshProfile()
+          await refreshUsage()
           setSuccess(`You're now on the ${plan.name} plan.`)
         },
       })
@@ -85,7 +86,7 @@ export function PlansDialog({ open, onClose }: PlansDialogProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
       <button
         type="button"
         aria-label="Close dialog"
@@ -98,7 +99,7 @@ export function PlansDialog({ open, onClose }: PlansDialogProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="plans-title"
-        className="relative flex max-h-[min(90vh,40rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-lg"
+        className="relative flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-lg sm:max-h-[min(90vh,40rem)] sm:rounded-2xl"
       >
         <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-5">
           <div>

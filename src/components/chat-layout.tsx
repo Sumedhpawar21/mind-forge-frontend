@@ -2,6 +2,7 @@ import {
   Code2,
   Lightbulb,
   MapPin,
+  Menu,
   PenLine,
   Sparkles,
 } from "lucide-react"
@@ -15,12 +16,14 @@ import { PlansDialog } from "@/components/plans-dialog"
 import { useAuth } from "@/context/auth-context"
 import { chatApi, messageApi } from "@/lib/api"
 import type { Chat, Message } from "@/types"
+import { Button } from "@/components/ui/button"
 
 interface ChatViewProps {
   chatId: string | null
   activeChatTitle: string | null
   onChatCreated: (chatId: string) => void
   onChatsRefresh: () => void
+  onOpenSidebar: () => void
 }
 
 interface LocalMessage {
@@ -57,10 +60,12 @@ export function ChatView({
   activeChatTitle,
   onChatCreated,
   onChatsRefresh,
+  onOpenSidebar,
 }: ChatViewProps) {
   const {
     messagesUsed,
     messagesLimit,
+    messagesRemaining,
     isLimitReached,
     refreshUsage,
   } = useAuth()
@@ -161,7 +166,9 @@ export function ChatView({
       const agentMsg: LocalMessage = {
         id: `temp-agent-${Date.now()}`,
         role: "AGENT",
-        content: fullText,
+        content:
+          fullText.trim() ||
+          "Sorry, I couldn't generate a response. Please try again.",
       }
 
       setMessages((prev) => [...prev, agentMsg])
@@ -177,14 +184,18 @@ export function ChatView({
       onChatsRefresh()
       void refreshUsage()
     } catch (err) {
+      setMessages((prev) => prev.filter((message) => message.id !== userMsg.id))
       const message =
         err instanceof Error ? err.message : "Failed to send message"
+      const isLimitError = message.toLowerCase().includes("max message limit")
       setError(
-        message.toLowerCase().includes("internal server error") ||
-          message.toLowerCase().includes("max message limit")
-          ? "Message limit reached or request failed. Try upgrading your plan."
+        isLimitError
+          ? "Message limit reached. Upgrade your plan to continue."
           : message
       )
+      if (isLimitError) {
+        setShowPlansDialog(true)
+      }
       setStreamingContent("")
       void refreshUsage()
     } finally {
@@ -196,22 +207,30 @@ export function ChatView({
 
   return (
     <div className="flex h-full flex-1 flex-col bg-chat-surface">
-      {activeChatTitle && (
-        <header className="flex h-12 shrink-0 items-center justify-center border-b border-border px-4">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            {activeChatTitle}
-          </h1>
-        </header>
-      )}
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3 sm:px-4">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onOpenSidebar}
+          className="shrink-0 text-muted-foreground md:hidden"
+          aria-label="Open chat history"
+        >
+          <Menu className="size-5" />
+        </Button>
+        <h1 className="min-w-0 flex-1 truncate text-center text-sm font-medium text-foreground md:text-left">
+          {activeChatTitle || "New chat"}
+        </h1>
+        <div className="size-9 shrink-0 md:hidden" aria-hidden />
+      </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
         {showEmpty ? (
-          <div className="flex h-full flex-col items-center justify-center gap-10 px-4 py-16">
+          <div className="flex h-full flex-col items-center justify-center gap-8 px-4 py-10 sm:gap-10 sm:py-16">
             <div className="max-w-lg space-y-3 text-center">
               <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-2xl bg-primary/10">
                 <Sparkles className="size-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight">
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
                 What can I help with?
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -284,6 +303,8 @@ export function ChatView({
         isLoading={isSending}
         messagesUsed={messagesUsed}
         messagesLimit={messagesLimit}
+        messagesRemaining={messagesRemaining}
+        isLimitReached={isLimitReached}
         onUpgradeClick={() => setShowPlansDialog(true)}
       />
 
@@ -303,6 +324,7 @@ interface ChatLayoutProps {
 function ChatLayoutContent({ activeChatId, onSelectChat }: ChatLayoutProps) {
   const [chats, setChats] = useState<Chat[]>([])
   const [isLoadingChats, setIsLoadingChats] = useState(true)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   const loadChats = useCallback(async () => {
     try {
@@ -335,7 +357,7 @@ function ChatLayoutContent({ activeChatId, onSelectChat }: ChatLayoutProps) {
   const activeChatTitle = activeChat?.title || null
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-dvh overflow-hidden bg-background">
       <ChatSidebar
         chats={chats}
         activeChatId={activeChatId}
@@ -343,6 +365,8 @@ function ChatLayoutContent({ activeChatId, onSelectChat }: ChatLayoutProps) {
         onNewChat={() => onSelectChat(null)}
         onDeleteChat={handleDeleteChat}
         isLoading={isLoadingChats}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
       />
       <main className="flex min-w-0 flex-1 flex-col">
         <ChatView
@@ -350,6 +374,7 @@ function ChatLayoutContent({ activeChatId, onSelectChat }: ChatLayoutProps) {
           activeChatTitle={activeChatTitle}
           onChatCreated={(id) => onSelectChat(id)}
           onChatsRefresh={loadChats}
+          onOpenSidebar={() => setMobileSidebarOpen(true)}
         />
       </main>
     </div>

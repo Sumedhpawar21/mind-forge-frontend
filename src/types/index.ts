@@ -1,9 +1,20 @@
 export interface UserSubscription {
   usage: number
+  remaining_messages?: number
   plan: {
     name: string
     max_messages: number
   }
+}
+
+export function getSubscriptionRemaining(
+  subscription: UserSubscription | null | undefined
+) {
+  if (!subscription) return 0
+  if (typeof subscription.remaining_messages === "number") {
+    return subscription.remaining_messages
+  }
+  return Math.max(0, subscription.plan.max_messages - subscription.usage)
 }
 
 export interface User {

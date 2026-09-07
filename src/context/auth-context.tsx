@@ -9,7 +9,7 @@ import {
 } from "react"
 
 import { authApi, clearToken, getToken, setToken, subscriptionApi } from "@/lib/api"
-import { getActiveSubscription, type User, type UserSubscription } from "@/types"
+import { getActiveSubscription, getSubscriptionRemaining, type User, type UserSubscription } from "@/types"
 
 interface AuthContextValue {
   user: User | null
@@ -18,6 +18,7 @@ interface AuthContextValue {
   subscription: UserSubscription | null
   messagesUsed: number
   messagesLimit: number
+  messagesRemaining: number
   isLimitReached: boolean
   login: (idToken: string) => Promise<void>
   logout: () => Promise<void>
@@ -103,11 +104,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser((prev) => {
         if (!prev) return prev
         const current = prev.subscriptions?.[0]
+
         return {
           ...prev,
           subscriptions: [
             {
               usage: res.data!.usage,
+              remaining_messages: res.data!.remaining_messages,
               plan: {
                 name: current?.plan.name ?? "Plan",
                 max_messages: res.data!.plan.max_messages,
@@ -123,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const subscription = getActiveSubscription(user)
   const messagesUsed = subscription?.usage ?? 0
+  const messagesRemaining = getSubscriptionRemaining(subscription)
   const messagesLimit = subscription?.plan.max_messages ?? 0
   const isLimitReached =
     messagesLimit > 0 ? messagesUsed >= messagesLimit : false
@@ -135,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription,
       messagesUsed,
       messagesLimit,
+      messagesRemaining,
       isLimitReached,
       login,
       logout,
@@ -147,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription,
       messagesUsed,
       messagesLimit,
+      messagesRemaining,
       isLimitReached,
       login,
       logout,

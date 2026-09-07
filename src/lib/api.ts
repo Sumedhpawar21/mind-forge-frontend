@@ -143,7 +143,8 @@ export const subscriptionApi = {
       message: string
       data: {
         usage: number
-        plan: { max_messages: number }
+        remaining_messages?: number
+        plan: { max_messages: number; name?: string }
       } | null
     }>("/api/subscription/usage"),
 }

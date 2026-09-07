@@ -12,6 +12,8 @@ interface ChatInputProps {
   placeholder?: string
   messagesUsed?: number
   messagesLimit?: number
+  messagesRemaining?: number
+  isLimitReached?: boolean
   onUpgradeClick?: () => void
 }
 
@@ -92,16 +94,21 @@ export function ChatInput({
   placeholder = `Message ${APP_NAME}...`,
   messagesUsed,
   messagesLimit,
+  messagesRemaining,
+  isLimitReached: isLimitReachedProp,
   onUpgradeClick,
 }: ChatInputProps) {
   const [value, setValue] = useState("")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const hasLimit =
-    typeof messagesUsed === "number" &&
-    typeof messagesLimit === "number" &&
-    messagesLimit > 0
-  const isLimitReached = hasLimit && messagesUsed >= messagesLimit
+    typeof messagesRemaining === "number" && messagesRemaining >= 0
+  const isLimitReached =
+    isLimitReachedProp ??
+    (typeof messagesUsed === "number" &&
+      typeof messagesLimit === "number" &&
+      messagesLimit > 0 &&
+      messagesUsed >= messagesLimit)
 
   const handleSend = () => {
     const trimmed = value.trim()
@@ -128,7 +135,7 @@ export function ChatInput({
   }
 
   return (
-    <div className="shrink-0 border-t border-border bg-chat-surface px-4 py-4 sm:px-8">
+    <div className="shrink-0 border-t border-border bg-chat-surface px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-4">
       <div className="mx-auto max-w-3xl">
         {isLimitReached && (
           <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm">
@@ -165,8 +172,8 @@ export function ChatInput({
           />
           {hasLimit && (
             <MessageLimitRing
-              used={messagesUsed}
-              limit={messagesLimit}
+              used={Math.max(0, (messagesLimit ?? 0) - (messagesRemaining ?? 0))}
+              limit={Math.max(messagesLimit ?? 1, messagesRemaining ?? 0)}
               onClick={onUpgradeClick}
             />
           )}
@@ -188,7 +195,7 @@ export function ChatInput({
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">
           {hasLimit
-            ? `${messagesUsed} of ${messagesLimit} messages used · AI can make mistakes.`
+            ? `${messagesRemaining} messages remaining · AI can make mistakes.`
             : "AI can make mistakes. Verify important information."}
         </p>
       </div>

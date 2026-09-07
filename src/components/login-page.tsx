@@ -65,7 +65,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background lg:flex-row">
+    <div className="relative flex min-h-dvh flex-col bg-background lg:flex-row">
       {/* Theme toggle */}
       <button
         type="button"
@@ -81,7 +81,7 @@ export function LoginPage() {
       </button>
 
       {/* Brand panel */}
-      <section className="relative flex flex-1 flex-col justify-between overflow-hidden border-b border-border px-8 py-12 lg:border-r lg:border-b-0 lg:px-12 lg:py-16">
+      <section className="relative flex flex-1 flex-col justify-between overflow-hidden border-b border-border px-5 py-10 sm:px-8 sm:py-12 lg:border-r lg:border-b-0 lg:px-12 lg:py-16">
         <div className="login-brand-glow pointer-events-none absolute inset-0" />
 
         <div className="relative">
@@ -129,7 +129,7 @@ export function LoginPage() {
       </section>
 
       {/* Sign-in panel */}
-      <section className="flex flex-1 items-center justify-center px-6 py-12 lg:px-12">
+      <section className="flex flex-1 items-center justify-center px-5 py-10 sm:px-6 sm:py-12 lg:px-12">
         <div className="w-full max-w-[22rem] space-y-8">
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="text-xl font-semibold tracking-tight">
@@ -144,7 +144,7 @@ export function LoginPage() {
             {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
               <div
                 className={cn(
-                  "flex justify-center transition-opacity",
+                  "flex w-full justify-center transition-opacity [&>div]:w-full [&>div]:!max-w-full",
                   isSubmitting && "pointer-events-none opacity-50"
                 )}
               >
@@ -157,7 +157,7 @@ export function LoginPage() {
                   size="large"
                   text="continue_with"
                   shape="rectangular"
-                  width="280"
+                  width="320"
                 />
               </div>
             ) : (
